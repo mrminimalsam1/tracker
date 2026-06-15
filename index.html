@@ -1,0 +1,1873 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Бортовий журнал v23</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap');
+
+:root{
+  --bg:#181a15;
+  --panel:#23261f;
+  --panel-2:#2c2f26;
+  --line:#3a3e33;
+  --paper:#e9e4d4;
+  --muted:#9a9587;
+  --ok:#6b8068;
+  --warn:#c4452e;
+  --accent:#c9b896;
+}
+
+*{box-sizing:border-box; margin:0; padding:0;}
+
+body{
+  background:var(--bg);
+  color:var(--paper);
+  font-family:'IBM Plex Sans', sans-serif;
+  padding:18px 14px 50px;
+  min-height:100vh;
+  max-width:760px;
+  margin:0 auto;
+}
+
+.header{
+  border-bottom:2px solid var(--accent);
+  padding-bottom:12px;
+  margin-bottom:14px;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.header h1{
+  font-family:'Oswald', sans-serif;
+  font-weight:700;
+  font-size:clamp(20px, 5vw, 28px);
+  letter-spacing:2px;
+  text-transform:uppercase;
+}
+
+.day-nav{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:18px;
+}
+.day-nav button{
+  background:var(--panel);
+  border:1px solid var(--line);
+  color:var(--paper);
+  border-radius:8px;
+  width:34px; height:34px;
+  font-size:16px;
+  cursor:pointer;
+  font-family:'IBM Plex Mono', monospace;
+}
+.day-nav button:hover{border-color:var(--accent); color:var(--accent);}
+.day-nav button:disabled{opacity:0.3; cursor:default;}
+.day-nav .date{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:15px;
+  color:var(--accent);
+  flex:1;
+  text-align:center;
+}
+.day-nav .today-btn{
+  background:transparent;
+  border:1px solid var(--line);
+  color:var(--muted);
+  border-radius:8px;
+  padding:0 10px;
+  height:34px;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+  cursor:pointer;
+  width:auto;
+}
+.day-nav .today-btn:hover{border-color:var(--accent); color:var(--accent);}
+.day-nav .today-btn:disabled{opacity:0.3; cursor:default;}
+
+.day-progress{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:14px;
+}
+.day-progress-track{
+  flex:1;
+  height:8px;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:4px;
+  overflow:hidden;
+}
+.day-progress-fill{
+  height:100%;
+  background:var(--ok);
+  transition:width 0.2s ease;
+}
+.day-progress-text{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:12px;
+  color:var(--accent);
+  white-space:nowrap;
+}
+.section-title{
+  font-family:'Oswald', sans-serif;
+  font-size:14px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:var(--accent);
+  margin:22px 0 10px;
+}
+
+.section{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:12px 14px;
+  margin-bottom:8px;
+}
+
+.section-header{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  cursor:pointer;
+}
+.section-header .name{
+  font-family:'Oswald', sans-serif;
+  font-size:14px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  flex:1;
+}
+
+.check{
+  width:18px; height:18px;
+  border:2px solid var(--muted);
+  border-radius:6px;
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+  color:var(--bg);
+  transition:all 0.12s ease;
+  cursor:pointer;
+}
+.check.done{background:var(--ok); border-color:var(--ok);}
+.check.done::after{content:'✓';}
+.check.skip{background:var(--warn); border-color:var(--warn);}
+.check.skip::after{content:'✗';}
+
+.time-input, select.time-input{
+  background:transparent;
+  border:1px solid var(--line);
+  border-radius:8px;
+  color:var(--paper);
+  font-family:'IBM Plex Mono', monospace;
+  font-size:13px;
+  padding:5px 6px;
+  width:88px;
+}
+.time-input:focus{outline:none; border-color:var(--accent);}
+.time-mask.time-invalid{border-color:var(--warn); color:var(--warn);}
+select.time-input{width:auto; cursor:pointer;}
+select.time-input option{background:var(--panel); color:var(--paper);}
+
+.subitems{
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px solid var(--line);
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.subitem{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.subitem .label{flex:1; font-size:13px; color:var(--paper);}
+
+.comment{
+  width:100%;
+  margin-top:8px;
+  background:transparent;
+  border:1px solid var(--line);
+  border-radius:8px;
+  color:var(--paper);
+  font-family:'IBM Plex Sans', sans-serif;
+  font-size:12px;
+  padding:7px 10px;
+  resize:vertical;
+  min-height:110px;
+}
+.comment:focus{outline:none; border-color:var(--accent);}
+.comment::placeholder{color:var(--muted);}
+
+.subitem-row{display:flex; flex-direction:column; gap:6px;}
+.subitem-row .top{display:flex; align-items:center; gap:10px;}
+.subitem-row .time-range{display:flex; gap:6px; align-items:center; font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--muted);}
+
+.streak{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+  color:var(--accent);
+  white-space:nowrap;
+}
+
+/* sleep section */
+.metric-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(120px, 1fr));
+  gap:10px;
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px solid var(--line);
+}
+.sub-title{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-top:14px;
+}
+.sub-title:first-of-type{margin-top:10px;}
+.metric{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.metric label{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:10px;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:0.5px;
+}
+.metric input{
+  background:transparent;
+  border:1px solid var(--line);
+  border-radius:8px;
+  color:var(--paper);
+  font-family:'IBM Plex Mono', monospace;
+  font-size:14px;
+  padding:6px 8px;
+  width:100%;
+}
+.metric input:focus{outline:none; border-color:var(--accent);}
+
+.file-row{
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px solid var(--line);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.file-btn{
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  color:var(--paper);
+  border-radius:8px;
+  padding:7px 12px;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+  cursor:pointer;
+}
+.file-btn:hover{border-color:var(--accent); color:var(--accent);}
+.file-name{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+  color:var(--accent);
+  flex:1;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.file-remove{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+  color:var(--muted);
+  cursor:pointer;
+}
+.file-remove:hover{color:var(--warn);}
+.auto-hint{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+  color:var(--ok);
+  margin-top:8px;
+  cursor:pointer;
+}
+.auto-hint:hover{text-decoration:underline;}
+
+.grid-wrap{
+  overflow-x:auto;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:14px;
+}
+table{
+  border-collapse:collapse;
+  width:100%;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+}
+th, td{
+  padding:6px 8px;
+  text-align:center;
+  border-bottom:1px solid var(--line);
+  white-space:nowrap;
+}
+th{
+  color:var(--muted);
+  font-weight:500;
+  text-transform:uppercase;
+  font-size:10px;
+}
+th.row-name, td.row-name{
+  text-align:left;
+  font-family:'IBM Plex Sans', sans-serif;
+  font-size:12px;
+  color:var(--paper);
+  position:sticky;
+  left:0;
+  background:var(--panel);
+  max-width:170px;
+}
+.cell-full{color:var(--ok); font-size:13px;}
+.cell-partial{color:var(--accent); font-size:13px;}
+.cell-empty{color:var(--line); font-size:13px;}
+td.today-col, th.today-col{background:rgba(201,184,150,0.08);}
+td.view-col, th.view-col{outline:1px solid var(--accent); outline-offset:-1px;}
+th.day-clickable{cursor:pointer;}
+th.day-clickable:hover{color:var(--accent);}
+
+.week-metric{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:7px 0;
+  border-bottom:1px solid var(--line);
+  font-size:13px;
+}
+.week-metric:last-child{border-bottom:none;}
+.week-metric .label{flex:0 1 auto; min-width:0;}
+.week-metric .value{
+  font-family:'IBM Plex Mono', monospace;
+  color:var(--accent);
+  font-size:13px;
+  white-space:nowrap;
+  flex-shrink:0;
+}
+.week-metric .spark{
+  margin-left:auto;
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  height:24px;
+}
+.sparkline{display:block;}
+.trend{font-family:'IBM Plex Mono', monospace; font-size:13px; margin-left:6px;}
+.trend.up{color:var(--ok);}
+.trend.down{color:var(--warn);}
+.trend.flat{color:var(--muted);}
+
+.habit-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:6px 0;
+  font-size:13px;
+}
+.habit-row .label{flex:1;}
+.habit-bar-track{
+  width:80px;
+  height:6px;
+  background:var(--line);
+  border-radius:3px;
+  overflow:hidden;
+  flex-shrink:0;
+}
+.habit-bar-fill{height:100%; background:var(--ok);}
+.habit-row .count{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+  color:var(--muted);
+  width:32px;
+  text-align:right;
+  flex-shrink:0;
+}
+.empty-note{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+  color:var(--muted);
+  padding:6px 0;
+}
+.hint{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+  color:var(--muted);
+  text-align:center;
+  margin-top:30px;
+  line-height:1.8;
+}
+.hint b{color:var(--accent); font-weight:500;}
+
+.export-row{
+  display:flex;
+  gap:8px;
+  margin-top:14px;
+  flex-wrap:wrap;
+}
+.export-row button{
+  background:transparent;
+  border:1px solid var(--line);
+  color:var(--muted);
+  border-radius:8px;
+  padding:8px 14px;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+  cursor:pointer;
+}
+.export-row button:hover{border-color:var(--accent); color:var(--accent);}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📔 Бортовий журнал</h1>
+</div>
+
+<div class="day-nav">
+  <button onclick="changeDay(-1)">◀</button>
+  <div class="date" id="view-date">—</div>
+  <button onclick="changeDay(1)" id="next-btn">▶</button>
+  <button class="today-btn" onclick="goToday()" id="today-btn">сьогодні</button>
+</div>
+
+<div class="day-progress">
+  <div class="day-progress-track"><div class="day-progress-fill" id="progress-fill"></div></div>
+  <div class="day-progress-text" id="progress-text">0/0</div>
+</div>
+
+<div class="export-row" style="margin-top:0; margin-bottom:18px;">
+  <button onclick="pasteDayData()" style="border-color:var(--accent); color:var(--accent);">📋 вставити дані дня (JSON від Claude)</button>
+</div>
+
+<div id="day-sections"></div>
+
+<div class="section-title">📊 Останні 10 днів</div>
+<div class="grid-wrap">
+  <table id="history-table"></table>
+</div>
+
+<div class="section-title">📈 Тижневий підсумок</div>
+<div class="section">
+  <div class="sub-title">Відновлення (середнє за 7 днів)</div>
+  <div id="weekly-recovery"></div>
+  <div class="sub-title">Звички (днів з 7)</div>
+  <div id="weekly-habits"></div>
+</div>
+
+<div class="export-row">
+  <button onclick="exportData()">Експорт даних (.json)</button>
+  <button onclick="importData()">Імпорт даних</button>
+  <input type="file" id="import-file" accept=".json" style="display:none">
+</div>
+
+<div class="export-row" style="gap:8px; flex-wrap:wrap;">
+  <button onclick="showDeviceCode()" style="border-color:var(--accent); color:var(--accent);">🔗 Код для нового пристрою</button>
+  <button onclick="linkDevice()" style="border-color:var(--accent); color:var(--accent);">📱 Ввести код з іншого пристрою</button>
+</div>
+
+<div class="export-row">
+  <button onclick="exportWeek()" style="border-color:var(--accent); color:var(--accent);">📦 Експорт тижня (.json)</button>
+  <button onclick="copyWeek()" style="border-color:var(--accent); color:var(--accent);">📋 Копіювати тиждень для Claude</button>
+</div>
+
+<div class="hint">
+  <span id="sync-status" style="font-weight:500">🔄 завантаження...</span><br>
+  Дані зберігаються в <b>хмарі Firebase</b> і автоматично синхронізуються між усіма пристроями.<br>
+  Стрілками ◀ ▶ можна переглянути будь-який минулий день. Клік по даті в таблиці — теж переходить на той день.<br>
+  Файли O2Ring/Garmin (CSV) можна прикріпити в розділі "Сон та відновлення" — вони зберігаються прямо в журналі.
+</div>
+
+<script>
+const STORAGE_KEY = 'bortovyi_zhurnal_v11';
+
+// ---- Firebase config ----
+const FB_CONFIG = {
+  apiKey: "AIzaSyAGQKHh8XjCrgM8wyXKci-Ta9k5kFS6xf8",
+  authDomain: "my-life-tracker-270693.firebaseapp.com",
+  databaseURL: "https://my-life-tracker-270693-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "my-life-tracker-270693",
+  storageBucket: "my-life-tracker-270693.firebasestorage.app",
+  messagingSenderId: "1054719389308",
+  appId: "1:1054719389308:web:0ae476faea1babf0bca3f9"
+};
+
+let fbUID = null;
+let fbToken = null;
+let fbOnline = false;
+let fbSaveTimer = null;
+
+function fbUrl(){
+  return FB_CONFIG.databaseURL + '/users/' + fbUID + '/journal.json?auth=' + fbToken;
+}
+
+async function fbSignIn(){
+  try{
+    const r = await fetch(
+      'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + FB_CONFIG.apiKey,
+      { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({returnSecureToken:true}) }
+    );
+    const d = await r.json();
+    if(d.localId && d.idToken){
+      fbUID = d.localId;
+      fbToken = d.idToken;
+      // save for reuse
+      localStorage.setItem('fb_uid', fbUID);
+      localStorage.setItem('fb_token', fbToken);
+      localStorage.setItem('fb_token_ts', Date.now());
+      return true;
+    }
+    return false;
+  }catch(e){ return false; }
+}
+
+async function fbRefreshToken(refreshToken){
+  try{
+    const r = await fetch(
+      'https://securetoken.googleapis.com/v1/token?key=' + FB_CONFIG.apiKey,
+      { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body: 'grant_type=refresh_token&refresh_token=' + refreshToken }
+    );
+    const d = await r.json();
+    if(d.id_token){
+      fbToken = d.id_token;
+      localStorage.setItem('fb_token', fbToken);
+      localStorage.setItem('fb_token_ts', Date.now());
+      return true;
+    }
+    return false;
+  }catch(e){ return false; }
+}
+
+async function fbEnsureAuth(){
+  // check if we have saved uid+token
+  const savedUID = localStorage.getItem('fb_uid');
+  const savedToken = localStorage.getItem('fb_token');
+  const savedRefresh = localStorage.getItem('fb_refresh');
+  const savedTS = parseInt(localStorage.getItem('fb_token_ts') || '0');
+  const tokenAge = Date.now() - savedTS; // ms
+
+  if(savedUID && savedToken && tokenAge < 55 * 60 * 1000){ // token valid < 55min
+    fbUID = savedUID;
+    fbToken = savedToken;
+    return true;
+  }
+  if(savedUID && savedRefresh){
+    fbUID = savedUID;
+    const ok = await fbRefreshToken(savedRefresh);
+    if(ok) return true;
+  }
+  // fresh sign-in
+  const r = await fetch(
+    'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + FB_CONFIG.apiKey,
+    { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({returnSecureToken:true}) }
+  );
+  const d = await r.json();
+  if(d.localId && d.idToken){
+    // if we had a saved UID, keep it (same device) — only replace if first time
+    if(!savedUID) fbUID = d.localId;
+    else fbUID = savedUID; // keep existing UID to not lose data
+    fbToken = d.idToken;
+    localStorage.setItem('fb_uid', fbUID);
+    localStorage.setItem('fb_token', fbToken);
+    localStorage.setItem('fb_token_ts', Date.now());
+    if(d.refreshToken) localStorage.setItem('fb_refresh', d.refreshToken);
+    return true;
+  }
+  return false;
+}
+
+async function fbLoad(){
+  try{
+    const r = await fetch(fbUrl());
+    if(!r.ok) throw new Error('fetch failed');
+    const d = await r.json();
+    fbOnline = true;
+    return d && d.records ? d : null;
+  }catch(e){ fbOnline = false; return null; }
+}
+
+async function fbSave(data){
+  try{
+    // refresh token if needed before save
+    const savedTS = parseInt(localStorage.getItem('fb_token_ts') || '0');
+    if(Date.now() - savedTS > 55 * 60 * 1000){
+      const savedRefresh = localStorage.getItem('fb_refresh');
+      if(savedRefresh) await fbRefreshToken(savedRefresh);
+    }
+    const r = await fetch(fbUrl(), {
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(data)
+    });
+    if(!r.ok) throw new Error('save failed');
+    fbOnline = true;
+    updateSyncStatus('synced');
+  }catch(e){
+    fbOnline = false;
+    updateSyncStatus('error');
+  }
+}
+
+function scheduleSave(){
+  if(fbSaveTimer) clearTimeout(fbSaveTimer);
+  updateSyncStatus('pending');
+  fbSaveTimer = setTimeout(() => fbSave(DATA), 1200);
+}
+
+function updateSyncStatus(state){
+  const el = document.getElementById('sync-status');
+  if(!el) return;
+  const map = {
+    pending:  {text:'⏳ зберігаємо...', color:'var(--muted)'},
+    synced:   {text:'☁️ збережено',     color:'var(--ok)'},
+    error:    {text:'⚠️ офлайн (локально)', color:'var(--warn)'},
+    loading:  {text:'🔄 завантаження...', color:'var(--muted)'},
+    auth:     {text:'🔐 авторизація...', color:'var(--muted)'}
+  };
+  const s = map[state] || map.synced;
+  el.textContent = s.text;
+  el.style.color = s.color;
+}
+
+function formatDate(d){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function formatDateUA(d){
+  return String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0');
+}
+function parseKey(key){
+  const [y,m,d] = key.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+
+const realToday = new Date();
+const todayKey = formatDate(realToday);
+let viewDate = new Date(realToday);
+
+// walk duration options
+const WALK_OPTIONS = ['10','15','20','25','30','35','40','45','50','55','60'];
+// redbull volume options (ml)
+const VOLUME_OPTIONS = ['250','330','473'];
+// daily water total options (ml)
+const WATER_OPTIONS = ['1500','2000','2500','3000','3500','4000'];
+
+// ===== Structure of the day =====
+const SECTIONS = [
+  {id:'dayContext', icon:'📋', title:'Контекст дня', type:'context', options:['звичайний','наряд','бойові дії','виїзд','відпустка','вихідний','лікарняний']},
+  {id:'bodyWeight', icon:'⚖️', title:'Вага тіла (кг)', type:'number'},
+  {id:'morningErection', icon:'📊', title:'Ранкова ерекція', type:'erection'},
+  {id:'wakeup', icon:'⏰', title:'Підйом', type:'time'},
+  {id:'firstFood', icon:'🕐', title:'Перша їжа', type:'check_comment', time:true, placeholder:'Що з\'їв першим: горішки, фрукт, протеїн...'},
+  {id:'sleep', icon:'🌙', title:'Сон та відновлення', type:'sleep', subsections:[
+    {id:'garmin', title:'Garmin', metrics:[
+      {id:'sleepScore', label:'Загальна оцінка сну', kind:'number'},
+      {id:'duration', label:'Тривалість сну (год:хв)', kind:'text'},
+      {id:'deepSleep', label:'Глибокий сон (год:хв)', kind:'text'},
+      {id:'remSleep', label:'Швидкий сон (год:хв)', kind:'text'},
+      {id:'lightSleep', label:'Легкий сон (год:хв)', kind:'text'},
+      {id:'awakenings', label:'Неспання (раз)', kind:'number'},
+      {id:'restlessness', label:'Моменти неспокою', kind:'number'},
+      {id:'avgHRnight', label:'Серед. ЧСС уночі', kind:'number'},
+      {id:'restingHR', label:'Пульс спокою', kind:'number'},
+      {id:'hrv', label:'Серед. ВСР уночі (мс)', kind:'number'},
+      {id:'bodyBattery', label:'Зміна Body Battery', kind:'text'}
+    ]},
+    {id:'o2ring', title:'O2Ring', metrics:[
+      {id:'oxMax', label:'Oxygen Level макс %', kind:'number'},
+      {id:'oxAvg', label:'Oxygen Level серед %', kind:'number'},
+      {id:'oxMin', label:'Oxygen Level мін %', kind:'number'},
+      {id:'o2score', label:'O2 Score', kind:'number'},
+      {id:'pulseMax', label:'Пульс макс', kind:'number'},
+      {id:'pulseAvg', label:'Пульс серед', kind:'number'},
+      {id:'pulseMin', label:'Пульс мін', kind:'number'}
+    ]}
+  ]},
+  {id:'water', icon:'💧', title:'Вода', type:'check_time'},
+  {id:'morning_walk', icon:'🚶', title:'Ранкова прогулянка', type:'check_duration', options:WALK_OPTIONS, unit:'хв'},
+  {id:'exercise', icon:'🤸', title:'Руханка', type:'check_comment', placeholder:'Що робив, скільки часу...'},
+  {id:'breakfast', icon:'🍳', title:'Сніданок', type:'check_comment', time:true, placeholder:'Що було на сніданок...'},
+  {id:'morning_supplements', icon:'💊', title:'Ранкові добавки', type:'group_check', items:[
+    {id:'omega3', label:'Омега-3'},
+    {id:'vitD', label:'Вітамін D'},
+    {id:'vitB', label:'Вітамін B (B-комплекс)'},
+    {id:'tadalafil', label:'Тадалафіл (Pinap 5мг)'}
+  ]},
+  {id:'redbull', icon:'⚡', title:'Редбул', type:'group_check', topCheck:true, comment:true, placeholder:'Коментар (чому, як почувався...)',
+   items:[
+    {id:'can1', label:'1 банка', time:true, volume:true},
+    {id:'can2', label:'2 банка', time:true, volume:true}
+  ]},
+  {id:'caffeineMg', icon:'☕', title:'Кофеїн (мг всього)', type:'number'},
+  {id:'lunch', icon:'🍲', title:'Обід', type:'check_comment', time:true, placeholder:'Що було на обід...'},
+  {id:'lunch_supplements', icon:'💊', title:'Обідні добавки', type:'group_check', items:[
+    {id:'ashwagandha', label:'Ашваганда'}
+  ]},
+  {id:'snack', icon:'🍎', title:'Перекус', type:'check_comment', time:true, placeholder:'Що було на перекус...', extraItems:[
+    {id:'protein', label:'Протеїн'},
+    {id:'creatine', label:'Креатин 5г'}
+  ]},
+  {id:'dinner', icon:'🍽️', title:'Вечеря', type:'check_comment', time:true, placeholder:'Що було на вечерю...'},
+  {id:'evening_supplements', icon:'💊', title:'Вечірні добавки', type:'group_check', items:[
+    {id:'omega3', label:'Омега-3'},
+    {id:'ashwagandha', label:'Ашваганда'}
+  ]},
+  {id:'evening_routine', icon:'🌆', title:'Вечірня рутина', type:'group_check', items:[
+    {id:'walk', label:'Прогулянка', duration:true},
+    {id:'magnesium', label:'Магній 400мг'},
+    {id:'vidboi', label:'Відбій', type:'time'}
+  ]},
+  {id:'training', icon:'🏋️', title:'Тренування', type:'training', subtypes:[
+    {id:'iron', label:'Залізо'},
+    {id:'dance', label:'Танці'},
+    {id:'cardio', label:'Кардіо'}
+  ]},
+  {id:'physical', icon:'🩹', title:'Фізичний стан', type:'pain'},
+  {id:'microActivity', icon:'🏃', title:'Міні-активність', type:'check_comment', placeholder:'Що робив: вправи, підходи, хвилини...'},
+  {id:'physicalLoad', icon:'⚡', title:'Фізичне навантаження дня', type:'select_duration', options:['низьке','середнє','високе','екстремальне'], unit:''},
+  {id:'water_total', icon:'🚰', title:'Вода (всього за день)', type:'select_duration', options:WATER_OPTIONS, unit:'мл'},
+  {id:'steps', icon:'👣', title:'Кількість кроків', type:'number'},
+  {id:'wellbeing', icon:'🧠', title:'Самопочуття', type:'scales', placeholder:'Що вплинуло на стан...', metrics:[
+    {id:'mood', label:'Настрій'},
+    {id:'energy', label:'Енергія'},
+    {id:'stress', label:'Стрес'},
+    {id:'motivation', label:'Мотивація'},
+    {id:'sleepQuality', label:'Якість сну (суб.)'},
+    {id:'focus', label:'Концентрація'}
+  ]}
+];
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return {records: {}};
+}
+let DATA = loadData();
+function save(){
+  // always keep localStorage as offline backup
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA)); }catch(e){}
+  // schedule cloud save
+  scheduleSave();
+}
+
+function defaultValue(section){
+  switch(section.type){
+    case 'time': return '';
+    case 'number': return '';
+    case 'check': return null;
+    case 'check_time': return {done:null, time:''};
+    case 'select_duration': return '';
+    case 'check_duration': return {done:null, duration:''};
+    case 'check_comment': {
+      const o = {done:null, comment:''};
+      if(section.time) o.time = '';
+      if(section.extraItems){
+        o.extras = {};
+        section.extraItems.forEach(e => o.extras[e.id] = null);
+      }
+      return o;
+    }
+    case 'sleep': {
+      const o = {file:null, autoHint:null};
+      section.subsections.forEach(sub => {
+        o[sub.id] = {};
+        sub.metrics.forEach(m => o[sub.id][m.id] = '');
+      });
+      return o;
+    }
+    case 'group_check': {
+      const o = {};
+      if(section.topCheck) o.done = false;
+      section.items.forEach(i => {
+        if(i.type === 'time') o[i.id] = '';
+        else if(i.time && i.volume) o[i.id] = {done:false, time:'', volume:''};
+        else if(i.time) o[i.id] = {done:false, time:''};
+        else if(i.duration) o[i.id] = {done:false, duration:''};
+        else o[i.id] = false;
+      });
+      if(section.comment) o.comment = '';
+      return o;
+    }
+    case 'group_check_comment': {
+      const o = {};
+      section.items.forEach(i => {
+        const item = {done:false, comment:''};
+        if(section.timeRange){ item.start=''; item.end=''; }
+        o[i.id] = item;
+      });
+      return o;
+    }
+    case 'training': {
+      const types = {};
+      section.subtypes.forEach(t => types[t.id] = false);
+      return {done:false, start:'', end:'', comment:'', types};
+    }
+    case 'scales': {
+      const o = {comment:''};
+      section.metrics.forEach(m => o[m.id] = '');
+      return o;
+    }
+    case 'context': return {type:'', notes:''};
+    case 'pain': return {level:'', location:''};
+    case 'erection': return {present:null, strength:''};
+  }
+}
+
+function getDayRecord(dateKey){
+  if(!DATA.records[dateKey]) DATA.records[dateKey] = {};
+  const rec = DATA.records[dateKey];
+  SECTIONS.forEach(s => {
+    if(rec[s.id] === undefined) rec[s.id] = defaultValue(s);
+    if(s.type === 'group_check' && s.topCheck && rec[s.id].done === undefined) rec[s.id].done = null;
+    if(s.type === 'check_comment' && typeof rec[s.id] === 'boolean') rec[s.id] = {done: rec[s.id], comment:''};
+    if(s.type === 'check_comment' && (typeof rec[s.id] === 'string' || rec[s.id] === null)) rec[s.id] = defaultValue(s);
+    if(s.type === 'check_comment' && s.time && rec[s.id].time === undefined) rec[s.id].time = '';
+  });
+  return rec;
+}
+
+function sectionStatus(section, value){
+  switch(section.type){
+    case 'time': return value ? 'full' : 'none';
+    case 'number': return value !== '' ? 'full' : 'none';
+    case 'check': return value ? 'full' : 'none';
+    case 'check_time': return value.done ? 'full' : 'none';
+    case 'select_duration': return value ? 'full' : 'none';
+    case 'check_duration': return value.done === true ? 'full' : value.done === false ? 'partial' : 'none';
+    case 'check_comment': return value.done === true ? 'full' : value.done === false ? 'partial' : 'none';
+    case 'sleep': {
+      const hasMetric = section.subsections.some(sub =>
+        sub.metrics.some(m => value[sub.id][m.id] !== '' && value[sub.id][m.id] !== undefined)
+      );
+      const hasFile = !!value.file;
+      if(hasMetric && hasFile) return 'full';
+      if(hasMetric || hasFile) return 'partial';
+      return 'none';
+    }
+    case 'group_check': {
+      if(section.topCheck) return value.done ? 'full' : 'none';
+      const vals = section.items.map(i => {
+        if(i.type === 'time') return !!value[i.id];
+        if(i.time || i.duration) return !!(value[i.id] && value[i.id].done);
+        return !!value[i.id];
+      });
+      if(vals.every(v=>v)) return 'full';
+      if(vals.some(v=>v)) return 'partial';
+      return 'none';
+    }
+    case 'group_check_comment': {
+      const vals = section.items.map(i => !!(value[i.id] && value[i.id].done));
+      if(vals.every(v=>v)) return 'full';
+      if(vals.some(v=>v)) return 'partial';
+      return 'none';
+    }
+    case 'training': return value.done ? 'full' : 'none';
+    case 'scales': {
+      const filled = section.metrics.filter(m => value[m.id] !== '').length;
+      if(filled === section.metrics.length) return 'full';
+      if(filled > 0) return 'partial';
+      return 'none';
+    }
+    case 'context': return value.type !== '' ? 'full' : 'none';
+    case 'pain': return value.level !== '' ? 'full' : 'none';
+    case 'erection': return value.present !== null ? 'full' : 'none';
+  }
+}
+
+function calcStreak(section, endKey){
+  let streak = 0;
+  let d = parseKey(endKey);
+  while(true){
+    const key = formatDate(d);
+    const rec = DATA.records[key];
+    const value = rec ? rec[section.id] : undefined;
+    const status = value !== undefined ? sectionStatus(section, value) : 'none';
+    if(status === 'full'){
+      streak++;
+      d.setDate(d.getDate()-1);
+    } else {
+      if(key === endKey){ d.setDate(d.getDate()-1); continue; }
+      break;
+    }
+  }
+  return streak;
+}
+
+function toggle(path){
+  const rec = getDayRecord(formatDate(viewDate));
+  const parts = path.split('.');
+  let obj = rec;
+  for(let i=0;i<parts.length-1;i++) obj = obj[parts[i]];
+  const key = parts[parts.length-1];
+  obj[key] = !obj[key];
+  save();
+  render();
+}
+
+// triToggle: null → true (виконано) → false (не виконано) → null (нейтрально)
+function triToggle(path){
+  const rec = getDayRecord(formatDate(viewDate));
+  const parts = path.split('.');
+  let obj = rec;
+  for(let i=0;i<parts.length-1;i++) obj = obj[parts[i]];
+  const key = parts[parts.length-1];
+  const cur = obj[key];
+  if(cur === null || cur === undefined) obj[key] = true;
+  else if(cur === true) obj[key] = 'skip';
+  else obj[key] = null;
+  save();
+  render();
+}
+
+function triClass(val){ return val === true ? 'done' : (val === false || val === 'skip') ? 'skip' : ''; }
+
+function setValue(path, val){
+  const rec = getDayRecord(formatDate(viewDate));
+  const parts = path.split('.');
+  let obj = rec;
+  for(let i=0;i<parts.length-1;i++) obj = obj[parts[i]];
+  obj[parts[parts.length-1]] = val;
+  save();
+}
+
+function changeDay(delta){
+  const candidate = new Date(viewDate);
+  candidate.setDate(candidate.getDate()+delta);
+  if(formatDate(candidate) > todayKey) return; // no future
+  viewDate = candidate;
+  render();
+}
+function goToday(){
+  viewDate = new Date(realToday);
+  render();
+}
+function jumpTo(key){
+  viewDate = parseKey(key);
+  if(formatDate(viewDate) > todayKey) viewDate = new Date(realToday);
+  render();
+}
+
+// ---- CSV parsing helper for O2Ring / Garmin exports ----
+function parseCSVForSpO2(text){
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length>0);
+  if(lines.length < 2) return null;
+  const delim = lines[0].includes(';') ? ';' : ',';
+  const header = lines[0].split(delim).map(h => h.trim().toLowerCase());
+  let spo2Idx = header.findIndex(h => h.includes('spo2') || h.includes('sp02') || h.includes('o2') && h.includes('sat'));
+  let hrIdx = header.findIndex(h => h.includes('pulse') || h.includes('heart') || h === 'hr' || h.includes('bpm'));
+  if(spo2Idx === -1 && hrIdx === -1) return null;
+
+  const spo2Vals = [], hrVals = [];
+  for(let i=1;i<lines.length;i++){
+    const cols = lines[i].split(delim);
+    if(spo2Idx !== -1){
+      const v = parseFloat(cols[spo2Idx]);
+      if(!isNaN(v) && v>0 && v<=100) spo2Vals.push(v);
+    }
+    if(hrIdx !== -1){
+      const v = parseFloat(cols[hrIdx]);
+      if(!isNaN(v) && v>0 && v<300) hrVals.push(v);
+    }
+  }
+
+  const result = {};
+  if(spo2Vals.length){
+    result.spo2min = Math.min(...spo2Vals);
+  }
+  if(hrVals.length){
+    result.restingHR = Math.round(hrVals.reduce((a,b)=>a+b,0)/hrVals.length);
+  }
+  if(Object.keys(result).length === 0) return null;
+  return result;
+}
+
+function handleSleepFile(input, sectionId){
+  const file = input.files[0];
+  if(!file) return;
+  if(file.size > 1500000){
+    alert('Файл занадто великий (>1.5MB) для збереження у браузері. Спробуй експортувати менший CSV (наприклад, лише за добу).');
+    input.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    const content = ev.target.result;
+    const rec = getDayRecord(formatDate(viewDate));
+    rec[sectionId].file = {name: file.name, content: content};
+
+    let autoHint = null;
+    if(file.name.toLowerCase().endsWith('.csv') || file.type.includes('csv') || file.type.includes('text')){
+      autoHint = parseCSVForSpO2(content);
+    }
+    rec[sectionId].autoHint = autoHint;
+    save();
+    render();
+  };
+  reader.readAsText(file);
+}
+
+function applyAutoHint(sectionId){
+  const rec = getDayRecord(formatDate(viewDate));
+  const hint = rec[sectionId].autoHint;
+  if(!hint) return;
+  const pathMap = {spo2min: 'o2ring.oxMin', restingHR: 'o2ring.pulseAvg'};
+  Object.keys(hint).forEach(k => {
+    const target = pathMap[k];
+    if(!target) return;
+    const [sub, field] = target.split('.');
+    rec[sectionId][sub][field] = String(hint[k]);
+  });
+  rec[sectionId].autoHint = null;
+  save();
+  render();
+}
+
+function downloadSleepFile(sectionId){
+  const rec = getDayRecord(formatDate(viewDate));
+  const f = rec[sectionId].file;
+  if(!f) return;
+  const blob = new Blob([f.content], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = f.name;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function removeSleepFile(sectionId){
+  const rec = getDayRecord(formatDate(viewDate));
+  rec[sectionId].file = null;
+  rec[sectionId].autoHint = null;
+  save();
+  render();
+}
+
+function deepMergeKnown(target, source){
+  let count = 0;
+  Object.keys(source).forEach(k => {
+    if(!(k in target)) return;
+    const tv = target[k], sv = source[k];
+    if(typeof tv === 'object' && tv !== null && typeof sv === 'object' && sv !== null && !Array.isArray(tv)){
+      count += deepMergeKnown(tv, sv);
+    } else {
+      if(typeof tv === 'string') target[k] = String(sv);
+      else if(typeof tv === 'boolean') target[k] = !!sv;
+      else target[k] = sv;
+      count++;
+    }
+  });
+  return count;
+}
+
+function pasteDayData(){
+  const input = prompt('Встав JSON-блок від Claude (дані на день):');
+  if(!input) return;
+  let data;
+  try{ data = JSON.parse(input); }catch(e){ alert('Не вдалось прочитати JSON — перевір формат.'); return; }
+
+  let targetKey = formatDate(viewDate);
+  if(data.date){
+    targetKey = data.date;
+    viewDate = parseKey(targetKey);
+  }
+  const rec = getDayRecord(targetKey);
+
+  let total = 0;
+  Object.keys(data).forEach(sectionId => {
+    if(sectionId === 'date') return;
+    if(rec[sectionId] !== undefined && typeof rec[sectionId] === 'object' && rec[sectionId] !== null){
+      total += deepMergeKnown(rec[sectionId], data[sectionId]);
+    }
+  });
+
+  save();
+  render();
+  alert(`Заповнено ${total} полів на ${targetKey}.`);
+}
+
+function renderDaySections(){
+  const viewKey = formatDate(viewDate);
+  const rec = getDayRecord(viewKey);
+
+  document.getElementById('view-date').textContent = formatDateUA(viewDate) + '.' + viewDate.getFullYear() + (viewKey===todayKey ? ' · сьогодні' : '');
+  document.getElementById('next-btn').disabled = (viewKey === todayKey);
+  document.getElementById('today-btn').disabled = (viewKey === todayKey);
+
+  const fullCount = SECTIONS.filter(s => sectionStatus(s, rec[s.id]) === 'full').length;
+  const totalCount = SECTIONS.length;
+  document.getElementById('progress-fill').style.width = (fullCount/totalCount*100) + '%';
+  document.getElementById('progress-text').textContent = `${fullCount}/${totalCount}`;
+
+  const container = document.getElementById('day-sections');
+  container.innerHTML = '';
+
+  SECTIONS.forEach(s => {
+    const value = rec[s.id];
+    if(value === undefined) return; // skip if not initialized
+    const streak = calcStreak(s, viewKey);
+    const div = document.createElement('div');
+    div.className = 'section';
+
+    let inner = '';
+
+    try{
+
+    if(s.type === 'time'){
+      inner = `
+        <div class="section-header">
+          <div class="name">${ico(s)}${s.title}</div>
+          <input type="text" class="time-input time-mask" placeholder="HH:MM" maxlength="5" autocomplete="off" value="${value}" data-path="${s.id}">
+          ${streak ? `<div class="streak">${streak} дн.</div>` : ''}
+        </div>`;
+    }
+    else if(s.type === 'number'){
+      const hint = s.id === 'caffeineMg' ? `<div style="font-size:11px;color:var(--muted);margin-top:6px;padding:0 2px">RedBull 473мл=151мг · Espresso=63мг · Americano=95мг · Чай чорний=47мг</div>` : '';
+      inner = `
+        <div class="section-header">
+          <div class="name">${ico(s)}${s.title}</div>
+          <input type="number" inputmode="numeric" step="1" class="time-input" style="width:110px" value="${value}" placeholder="0" data-path="${s.id}">
+          ${streak ? `<div class="streak">${streak} дн.</div>` : ''}
+        </div>${hint}`;
+    }
+    else if(s.type === 'check'){
+      inner = `
+        <div class="section-header" onclick="triToggle('${s.id}')">
+          <div class="check ${triClass(value)}"></div>
+          <div class="name">${ico(s)}${s.title}</div>
+          ${streak ? `<div class="streak">${streak} дн.</div>` : ''}
+        </div>`;
+    }
+    else if(s.type === 'check_time'){
+      inner = `
+        <div class="section-header">
+          <div class="check ${triClass(value.done)}" onclick="triToggle('${s.id}.done')"></div>
+          <div class="name" onclick="triToggle('${s.id}.done')">${ico(s)}${s.title}</div>
+          <input type="text" class="time-input time-mask" placeholder="HH:MM" maxlength="5" autocomplete="off" value="${value.time}" data-path="${s.id}.time">
+          ${streak ? `<div class="streak">${streak} дн.</div>` : ''}
+        </div>`;
+    }
+    else if(s.type === 'select_duration'){
+      inner = `
+        <div class="section-header">
+          <div class="name">${ico(s)}${s.title}</div>
+          <select class="time-input" data-path="${s.id}">
+            <option value="" ${value===''?'selected':''}>—</option>
+            ${s.options.map(o => `<option value="${o}" ${value===o?'selected':''}>${o} ${s.unit}</option>`).join('')}
+          </select>
+          ${streak ? `<div class="streak">${streak} дн.</div>` : ''}
+        </div>`;
+    }
+    else if(s.type === 'check_duration'){
+      inner = `
+        <div class="section-header">
+          <div class="check ${triClass(value.done)}" onclick="triToggle('${s.id}.done')"></div>
+          <div class="name" onclick="triToggle('${s.id}.done')">${ico(s)}${s.title}</div>
+          <select class="time-input" data-path="${s.id}.duration">
+            <option value="" ${value.duration===''?'selected':''}>—</option>
+            ${s.options.map(o => `<option value="${o}" ${value.duration===o?'selected':''}>${o} ${s.unit}</option>`).join('')}
+          </select>
+          ${streak ? `<div class="streak">${streak} дн.</div>` : ''}
+        </div>`;
+    }
+    else if(s.type === 'check_comment'){
+      inner = `
+        <div class="section-header">
+          <div class="check ${triClass(value.done)}" onclick="triToggle('${s.id}.done')"></div>
+          <div class="name" onclick="triToggle('${s.id}.done')">${ico(s)}${s.title}</div>
+          ${s.time ? `<input type="text" class="time-input time-mask" placeholder="HH:MM" maxlength="5" autocomplete="off" value="${value.time}" data-path="${s.id}.time">` : ''}
+          ${streak ? `<div class="streak">${streak} дн.</div>` : ''}
+        </div>
+        ${s.extraItems ? `
+        <div class="subitems">
+          ${s.extraItems.map(e => `
+            <div class="subitem" onclick="triToggle('${s.id}.extras.${e.id}')">
+              <div class="check ${triClass(value.extras[e.id])}"></div>
+              <div class="label">${e.label}</div>
+            </div>
+          `).join('')}
+        </div>` : ''}
+        <textarea class="comment" placeholder="${s.placeholder||''}" data-path="${s.id}.comment">${value.comment}</textarea>`;
+    }
+    else if(s.type === 'sleep'){
+      const fileBlock = value.file
+        ? `<div class="file-row">
+             <span class="file-name">📎 ${value.file.name}</span>
+             <span class="file-btn" onclick="downloadSleepFile('${s.id}')">завантажити</span>
+             <span class="file-remove" onclick="removeSleepFile('${s.id}')">видалити ✕</span>
+           </div>`
+        : `<div class="file-row">
+             <label class="file-btn">
+               прикріпити файл (CSV з O2Ring / Garmin)
+               <input type="file" accept=".csv,.txt,.json" style="display:none" onchange="handleSleepFile(this,'${s.id}')">
+             </label>
+             <span class="file-btn" onclick="pasteDayData()">вставити дані дня (JSON від Claude)</span>
+           </div>`;
+
+      const hintBlock = value.autoHint
+        ? `<div class="auto-hint" onclick="applyAutoHint('${s.id}')">
+             ✓ З файлу автоматично визначено: ${Object.entries(value.autoHint).map(([k,v])=>`${k}=${v}`).join(', ')} — натисни, щоб заповнити поля O2Ring
+           </div>`
+        : '';
+
+      inner = `
+        <div class="section-header">
+          <div class="name">${ico(s)}${s.title}</div>
+          ${streak ? `<div class="streak">${streak} дн.</div>` : ''}
+        </div>
+        ${s.subsections.map(sub => `
+          <div class="sub-title">${sub.title}</div>
+          <div class="metric-grid">
+            ${sub.metrics.map(m => `
+              <div class="metric">
+                <label>${m.label}</label>
+                <input type="${m.kind==='text'?'text':'number'}" ${m.kind==='text'?'':'step="0.1" inputmode="decimal"'} value="${value[sub.id][m.id]}" data-path="${s.id}.${sub.id}.${m.id}">
+              </div>
+            `).join('')}
+          </div>
+        `).join('')}
+        ${fileBlock}
+        ${hintBlock}`;
+    }
+    else if(s.type === 'group_check'){
+      inner = `
+        <div class="section-header" ${s.topCheck ? `onclick="triToggle('${s.id}.done')"` : ''}>
+          ${s.topCheck ? `<div class="check ${triClass(value.done)}"></div>` : ''}
+          <div class="name">${ico(s)}${s.title}</div>
+          ${streak ? `<div class="streak">${streak} дн.</div>` : ''}
+        </div>
+        <div class="subitems">
+          ${s.items.map(i => {
+            if(i.type === 'time'){
+              return `
+                <div class="subitem">
+                  <div class="label">${i.label}</div>
+                  <input type="text" class="time-input time-mask" placeholder="HH:MM" maxlength="5" autocomplete="off" value="${value[i.id]}" data-path="${s.id}.${i.id}">
+                </div>`;
+            }
+            if(i.time && i.volume){
+              const v = value[i.id];
+              return `
+                <div class="subitem">
+                  <div class="check ${triClass(v.done)}" onclick="triToggle('${s.id}.${i.id}.done')"></div>
+                  <div class="label">${i.label}</div>
+                  <input type="text" class="time-input time-mask" placeholder="HH:MM" maxlength="5" autocomplete="off" value="${v.time}" data-path="${s.id}.${i.id}.time">
+                  <select class="time-input" data-path="${s.id}.${i.id}.volume">
+                    <option value="" ${v.volume===''?'selected':''}>—</option>
+                    ${VOLUME_OPTIONS.map(o => `<option value="${o}" ${v.volume===o?'selected':''}>${o} мл</option>`).join('')}
+                  </select>
+                </div>`;
+            }
+            if(i.time){
+              const v = value[i.id];
+              return `
+                <div class="subitem">
+                  <div class="check ${triClass(v.done)}" onclick="triToggle('${s.id}.${i.id}.done')"></div>
+                  <div class="label">${i.label}</div>
+                  <input type="text" class="time-input time-mask" placeholder="HH:MM" maxlength="5" autocomplete="off" value="${v.time}" data-path="${s.id}.${i.id}.time">
+                </div>`;
+            }
+            if(i.duration){
+              const v = value[i.id];
+              return `
+                <div class="subitem">
+                  <div class="check ${triClass(v.done)}" onclick="triToggle('${s.id}.${i.id}.done')"></div>
+                  <div class="label">${i.label}</div>
+                  <select class="time-input" data-path="${s.id}.${i.id}.duration">
+                    <option value="" ${v.duration===''?'selected':''}>—</option>
+                    ${WALK_OPTIONS.map(o => `<option value="${o}" ${v.duration===o?'selected':''}>${o} хв</option>`).join('')}
+                  </select>
+                </div>`;
+            }
+            return `
+              <div class="subitem" onclick="triToggle('${s.id}.${i.id}')">
+                <div class="check ${triClass(value[i.id])}"></div>
+                <div class="label">${i.label}</div>
+              </div>`;
+          }).join('')}
+          ${s.comment ? `<textarea class="comment" placeholder="${s.placeholder||''}" data-path="${s.id}.comment">${value.comment}</textarea>` : ''}
+        </div>`;
+    }
+    else if(s.type === 'group_check_comment'){
+      inner = `
+        <div class="section-header">
+          <div class="name">${ico(s)}${s.title}</div>
+          ${streak ? `<div class="streak">${streak} дн.</div>` : ''}
+        </div>
+        <div class="subitems">
+          ${s.items.map(i => {
+            const v = value[i.id];
+            return `
+            <div class="subitem-row">
+              <div class="top">
+                <div class="check ${triClass(v.done)}" onclick="triToggle('${s.id}.${i.id}.done')"></div>
+                <div class="label">${i.label}</div>
+                ${s.timeRange ? `
+                  <div class="time-range">
+                    <span>з</span>
+                    <input type="text" class="time-input time-mask" placeholder="HH:MM" maxlength="5" autocomplete="off" value="${v.start}" data-path="${s.id}.${i.id}.start">
+                    <span>до</span>
+                    <input type="text" class="time-input time-mask" placeholder="HH:MM" maxlength="5" autocomplete="off" value="${v.end}" data-path="${s.id}.${i.id}.end">
+                  </div>` : ''}
+              </div>
+              <textarea class="comment" placeholder="Коментар..." data-path="${s.id}.${i.id}.comment">${v.comment}</textarea>
+            </div>`;
+          }).join('')}
+        </div>`;
+    }
+    else if(s.type === 'training'){
+      const types = value.types || {};
+      inner = `
+        <div class="section-header">
+          <div class="check ${triClass(value.done)}" onclick="triToggle('${s.id}.done')"></div>
+          <div class="name" onclick="triToggle('${s.id}.done')">${ico(s)}${s.title}</div>
+          <div class="time-range">
+            <span>з</span>
+            <input type="text" class="time-input time-mask" placeholder="HH:MM" maxlength="5" autocomplete="off" value="${value.start||''}" data-path="${s.id}.start">
+            <span>до</span>
+            <input type="text" class="time-input time-mask" placeholder="HH:MM" maxlength="5" autocomplete="off" value="${value.end||''}" data-path="${s.id}.end">
+          </div>
+          ${streak ? `<div class="streak">${streak} дн.</div>` : ''}
+        </div>
+        <div class="subitems">
+          ${s.subtypes.map(t => `
+            <div class="subitem" onclick="triToggle('${s.id}.types.${t.id}')">
+              <div class="check ${triClass(types[t.id])}"></div>
+              <div class="label">${t.label}</div>
+            </div>
+          `).join('')}
+          <textarea class="comment" placeholder="Коментар до тренування..." data-path="${s.id}.comment">${value.comment||''}</textarea>
+        </div>`;
+    }
+    else if(s.type === 'scales'){
+      inner = `
+        <div class="section-header">
+          <div class="name">${ico(s)}${s.title}</div>
+          ${streak ? `<div class="streak">${streak} дн.</div>` : ''}
+        </div>
+        <div class="metric-grid">
+          ${s.metrics.map(m => `
+            <div class="metric">
+              <label>${m.label}</label>
+              <input type="number" min="1" max="10" step="1" inputmode="numeric" placeholder="1-10" value="${value[m.id]}" data-path="${s.id}.${m.id}">
+            </div>
+          `).join('')}
+        </div>
+        <textarea class="comment" placeholder="${s.placeholder||''}" data-path="${s.id}.comment">${value.comment}</textarea>`;
+    }
+    else if(s.type === 'context'){
+      inner = `
+        <div class="section-header">
+          <div class="name">${ico(s)}${s.title}</div>
+          <select class="time-input" style="width:auto;" data-path="${s.id}.type">
+            <option value="" ${value.type===''?'selected':''}>—</option>
+            ${s.options.map(o => `<option value="${o}" ${value.type===o?'selected':''}>${o}</option>`).join('')}
+          </select>
+        </div>
+        <textarea class="comment" placeholder="Що сталось незвичного..." data-path="${s.id}.notes">${value.notes}</textarea>`;
+    }
+    else if(s.type === 'pain'){
+      inner = `
+        <div class="section-header">
+          <div class="name">${ico(s)}${s.title}</div>
+          <input type="number" min="0" max="10" step="1" inputmode="numeric" class="time-input" style="width:64px" placeholder="0-10" value="${value.level}" data-path="${s.id}.level">
+        </div>
+        <input type="text" class="comment" style="min-height:auto;" placeholder="Локалізація (де болить)..." value="${value.location}" data-path="${s.id}.location">`;
+    }
+    else if(s.type === 'erection'){
+      const strengths = ['1','2','3','4','5','6','7','8','9','10'];
+      inner = `
+        <div class="section-header">
+          <div class="check ${triClass(value.present)}" onclick="triToggle('${s.id}.present')" style="flex-shrink:0"></div>
+          <div class="name" onclick="triToggle('${s.id}.present')">${ico(s)}${s.title}</div>
+          <select class="time-input" data-path="${s.id}.strength" ${value.present !== true ? 'disabled style="opacity:0.3"' : ''}>
+            <option value="">сила —</option>
+            ${strengths.map(v => `<option value="${v}" ${value.strength===v?'selected':''}>${v}/10</option>`).join('')}
+          </select>
+          ${streak ? `<div class="streak">${streak} дн.</div>` : ''}
+        </div>`;
+    }
+
+    div.innerHTML = inner;
+    container.appendChild(div);
+    } catch(err){
+      console.error('Render error in section', s.id, err);
+    }
+  });
+
+  // bind inputs (time + textareas + selects + number metrics)
+  container.querySelectorAll('[data-path]').forEach(el => {
+    if(el.classList.contains('time-mask')) return; // handled by global mask listener
+    el.addEventListener('input', () => setValue(el.dataset.path, el.value));
+    el.addEventListener('change', () => { setValue(el.dataset.path, el.value); render(); });
+  });
+}
+
+function renderHistory(){
+  const viewKey = formatDate(viewDate);
+  const table = document.getElementById('history-table');
+  const days = [];
+  for(let i=9; i>=0; i--){
+    const d = new Date(realToday);
+    d.setDate(d.getDate()-i);
+    days.push(d);
+  }
+
+  let thead = '<tr><th class="row-name">Розділ</th>';
+  days.forEach(d => {
+    const key = formatDate(d);
+    const cls = (key===todayKey?'today-col ':'') + (key===viewKey?'view-col ':'') + 'day-clickable';
+    thead += `<th class="${cls}" onclick="jumpTo('${key}')">${formatDateUA(d)}</th>`;
+  });
+  thead += '</tr>';
+
+  let rows = '';
+  SECTIONS.forEach(s => {
+    rows += `<tr><td class="row-name">${ico(s)}${s.title}</td>`;
+    days.forEach(d => {
+      const key = formatDate(d);
+      const rec = DATA.records[key];
+      const value = rec ? rec[s.id] : undefined;
+      const status = value !== undefined ? sectionStatus(s, value) : 'none';
+      let symbol = '·', cls = 'cell-empty';
+      if(status === 'full'){ symbol = '●'; cls = 'cell-full'; }
+      else if(status === 'partial'){ symbol = '◐'; cls = 'cell-partial'; }
+      const tdcls = (key===todayKey?'today-col ':'') + (key===viewKey?'view-col ':'');
+      rows += `<td class="${tdcls}"><span class="${cls}">${symbol}</span></td>`;
+    });
+    rows += '</tr>';
+  });
+
+  table.innerHTML = thead + rows;
+}
+
+// recovery metrics tracked for weekly summary (path into sleep section)
+const RECOVERY_METRICS = [
+  {path:['garmin','sleepScore'], label:'Оцінка сну', kind:'number', unit:'', good:'up'},
+  {path:['garmin','duration'], label:'Тривалість сну', kind:'duration', unit:'', good:'up'},
+  {path:['garmin','deepSleep'], label:'Глибокий сон', kind:'duration', unit:'', good:'up'},
+  {path:['garmin','hrv'], label:'HRV уночі', kind:'number', unit:'мс', good:'up'},
+  {path:['garmin','restingHR'], label:'Пульс спокою', kind:'number', unit:'', good:'down'},
+  {path:['o2ring','oxMin'], label:'SpO2 мін', kind:'number', unit:'%', good:'up'},
+  {path:['o2ring','o2score'], label:'O2 Score', kind:'number', unit:'', good:'up'}
+];
+
+function parseDuration(str){
+  if(!str) return null;
+  const cleaned = String(str).replace(/[гh]/gi, ':').replace(/[хx]/gi, '').trim();
+  const parts = cleaned.split(':');
+  const h = parseInt(parts[0]);
+  if(isNaN(h)) return null;
+  const m = parts[1] !== undefined ? parseInt(parts[1]) : 0;
+  return h*60 + (isNaN(m) ? 0 : m);
+}
+function formatDuration(mins){
+  const h = Math.floor(mins/60), m = Math.round(mins%60);
+  return h + 'г' + String(m).padStart(2,'0') + 'х';
+}
+
+function computeAvg(dateKeys, path, kind){
+  const vals = [];
+  dateKeys.forEach(key => {
+    const rec = DATA.records[key];
+    if(!rec || !rec.sleep) return;
+    const raw = rec.sleep[path[0]] ? rec.sleep[path[0]][path[1]] : '';
+    if(raw === '' || raw === undefined || raw === null) return;
+    const v = kind === 'duration' ? parseDuration(raw) : parseFloat(raw);
+    if(v !== null && !isNaN(v)) vals.push(v);
+  });
+  if(!vals.length) return null;
+  return vals.reduce((a,b)=>a+b, 0) / vals.length;
+}
+
+function getDailyValues(days, path, kind){
+  // days[0] = today ... days[6] = 6 days ago; return oldest->newest for left-to-right chart
+  return days.slice().reverse().map(key => {
+    const rec = DATA.records[key];
+    if(!rec || !rec.sleep) return null;
+    const raw = rec.sleep[path[0]] ? rec.sleep[path[0]][path[1]] : '';
+    if(raw === '' || raw === undefined || raw === null) return null;
+    const v = kind === 'duration' ? parseDuration(raw) : parseFloat(raw);
+    return (v !== null && !isNaN(v)) ? v : null;
+  });
+}
+
+function renderSparkline(values){
+  const w=72, h=24, pad=3;
+  const n = values.length;
+  const valid = values.map((v,i)=>({v,i})).filter(p => p.v !== null);
+  if(valid.length < 2) return '';
+  const min = Math.min(...valid.map(p=>p.v));
+  const max = Math.max(...valid.map(p=>p.v));
+  const range = (max-min) || 1;
+  const coord = p => {
+    const x = pad + (p.i/(n-1))*(w-2*pad);
+    const y = h-pad - ((p.v-min)/range)*(h-2*pad);
+    return [x,y];
+  };
+  const pts = valid.map(coord);
+  const polyline = pts.map(([x,y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const circles = valid.map((p,idx) => {
+    const [x,y] = pts[idx];
+    const isLast = p.i === n-1;
+    return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${isLast?2:1.2}" fill="${isLast?'var(--accent)':'var(--muted)'}"/>`;
+  }).join('');
+  return `<svg width="${w}" height="${h}" class="sparkline"><polyline points="${polyline}" fill="none" stroke="var(--accent)" stroke-width="1.5" opacity="0.55"/>${circles}</svg>`;
+}
+
+const HABIT_SECTIONS = SECTIONS.filter(s => s.id !== 'sleep' && s.id !== 'steps');
+
+function renderWeeklySummary(){
+  const days = [], prevDays = [];
+  for(let i=0;i<7;i++){
+    const d = new Date(realToday); d.setDate(d.getDate()-i);
+    days.push(formatDate(d));
+  }
+  for(let i=7;i<14;i++){
+    const d = new Date(realToday); d.setDate(d.getDate()-i);
+    prevDays.push(formatDate(d));
+  }
+
+  // Recovery
+  const recoveryEl = document.getElementById('weekly-recovery');
+  const rows = RECOVERY_METRICS.map(m => {
+    const cur = computeAvg(days, m.path, m.kind);
+    if(cur === null) return null;
+    const prev = computeAvg(prevDays, m.path, m.kind);
+    const curStr = m.kind === 'duration' ? formatDuration(cur) : (Math.round(cur*10)/10) + (m.unit ? ' '+m.unit : '');
+    let trendHtml = '';
+    if(prev !== null){
+      const diff = cur - prev;
+      const threshold = m.kind === 'duration' ? 5 : (m.unit === '%' ? 0.5 : 1);
+      if(Math.abs(diff) < threshold){
+        trendHtml = `<span class="trend flat">→</span>`;
+      } else {
+        const dirUp = diff > 0;
+        const cls = (dirUp === (m.good === 'up')) ? 'up' : 'down';
+        trendHtml = `<span class="trend ${cls}">${dirUp ? '↑' : '↓'}</span>`;
+      }
+    }
+    return `<div class="week-metric"><div class="label">${m.label}</div><div class="value">${curStr}${trendHtml}</div><div class="spark">${renderSparkline(getDailyValues(days, m.path, m.kind))}</div></div>`;
+  }).filter(Boolean);
+
+  recoveryEl.innerHTML = rows.length ? rows.join('') : `<div class="empty-note">Ще немає даних по сну за останні 7 днів.</div>`;
+
+  // Habits
+  const habitsEl = document.getElementById('weekly-habits');
+  habitsEl.innerHTML = HABIT_SECTIONS.map(s => {
+    let full = 0;
+    days.forEach(key => {
+      const rec = DATA.records[key];
+      const value = rec ? rec[s.id] : undefined;
+      if(value !== undefined && sectionStatus(s, value) === 'full') full++;
+    });
+    const pct = full/7*100;
+    return `<div class="habit-row">
+      <div class="label">${ico(s)}${s.title}</div>
+      <div class="habit-bar-track"><div class="habit-bar-fill" style="width:${pct}%"></div></div>
+      <div class="count">${full}/7</div>
+    </div>`;
+  }).join('');
+}
+
+function ico(s){ return s.icon ? s.icon + ' ' : ''; }
+
+function render(){
+  renderDaySections();
+  renderHistory();
+  renderWeeklySummary();
+}
+
+// ---- Sunday backup reminder ----
+function migrateAllRecords(){
+  Object.keys(DATA.records || {}).forEach(dateKey => {
+    const rec = DATA.records[dateKey];
+    if(!rec) return;
+    SECTIONS.forEach(s => {
+      const v = rec[s.id];
+      if(v === undefined) return;
+      if(s.type === 'check' && v === false) rec[s.id] = null;
+      else if((s.type === 'check_time'||s.type === 'check_duration'||s.type === 'check_comment') && v && v.done === false) v.done = null;
+      else if(s.type === 'group_check' && v){
+        if(v.done === false) v.done = null;
+        s.items && s.items.forEach(i => {
+          if(v[i.id] === false) v[i.id] = null;
+          else if(v[i.id] && typeof v[i.id] === 'object' && v[i.id].done === false) v[i.id].done = null;
+        });
+      }
+      else if(s.type === 'training' && v){
+        if(v.done === false) v.done = null;
+        if(v.types) Object.keys(v.types).forEach(k => { if(v.types[k] === false) v.types[k] = null; });
+      }
+      else if(s.type === 'erection' && v && v.present === false) v.present = null;
+    });
+  });
+}
+
+function checkBackupReminder(){
+  const today = new Date();
+  if(today.getDay() !== 0) return;
+  const lastReminder = localStorage.getItem('backup_reminded');
+  const thisWeek = today.getFullYear() + '-W' + String(Math.ceil(today.getDate() / 7));
+  if(lastReminder === thisWeek) return;
+  localStorage.setItem('backup_reminded', thisWeek);
+  const banner = document.createElement('div');
+  banner.id = 'backup-banner';
+  banner.style.cssText = `
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background:var(--panel); border:1px solid var(--accent); border-radius:12px;
+    padding:14px 20px; display:flex; align-items:center; gap:14px;
+    font-family:'IBM Plex Sans',sans-serif; font-size:14px; color:var(--paper);
+    z-index:9999; box-shadow:0 4px 24px rgba(0,0,0,0.4); max-width:340px;
+  `;
+  banner.innerHTML = `
+    <span style="font-size:22px">💾</span>
+    <span style="flex:1; line-height:1.4">Неділя — час зробити <b>бекап даних</b>. Займе 5 секунд.</span>
+    <div style="display:flex; flex-direction:column; gap:6px;">
+      <button onclick="exportData(); document.getElementById('backup-banner').remove();"
+        style="background:var(--accent); color:var(--bg); border:none; border-radius:8px;
+               padding:6px 12px; font-size:13px; cursor:pointer; white-space:nowrap; font-weight:600;">
+        Зберегти
+      </button>
+      <button onclick="document.getElementById('backup-banner').remove();"
+        style="background:transparent; color:var(--muted); border:none; font-size:12px; cursor:pointer;">
+        Пізніше
+      </button>
+    </div>
+  `;
+  document.body.appendChild(banner);
+}
+
+function exportData(){
+  const blob = new Blob([JSON.stringify(DATA, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'bortovyi_zhurnal_' + todayKey + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function getWeekBlock(){
+  const days = [];
+  for(let i=6;i>=0;i--){
+    const d = new Date(realToday); d.setDate(d.getDate()-i);
+    days.push(formatDate(d));
+  }
+  const week = {};
+  days.forEach(key => { week[key] = DATA.records[key] || null; });
+  return {range: days[0] + ' — ' + days[days.length-1], days: week};
+}
+
+function exportWeek(){
+  const block = getWeekBlock();
+  const blob = new Blob([JSON.stringify(block, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'tyzhden_' + block.range.replace(/ — /g,'_') + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function copyWeek(){
+  const block = getWeekBlock();
+  const text = JSON.stringify(block, null, 2);
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(
+      () => alert('Дані за тиждень (' + block.range + ') скопійовано. Встав їх у чат з Claude.'),
+      () => prompt('Не вдалось скопіювати автоматично. Виділи і скопіюй вручну:', text)
+    );
+  } else {
+    prompt('Скопіюй цей блок вручну і встав у чат з Claude:', text);
+  }
+}
+
+function importData(){
+  document.getElementById('import-file').click();
+}
+
+document.getElementById('import-file').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    try{
+      const imported = JSON.parse(ev.target.result);
+      if(imported.records){
+        DATA = imported;
+        save();
+        render();
+        alert('Дані успішно імпортовано.');
+      } else {
+        alert('Невірний формат файлу.');
+      }
+    }catch(err){
+      alert('Помилка читання файлу.');
+    }
+  };
+  reader.readAsText(file);
+});
+
+// ---- Init: auth → load from Firebase → fall back to localStorage ----
+(async function init(){
+  updateSyncStatus('auth');
+  const authed = await fbEnsureAuth();
+  if(!authed){
+    updateSyncStatus('error');
+    render();
+    return;
+  }
+  updateSyncStatus('loading');
+  const cloudData = await fbLoad();
+  if(cloudData){
+    const local = DATA;
+    DATA = cloudData;
+    Object.keys(local.records || {}).forEach(k => {
+      if(!DATA.records[k]) DATA.records[k] = local.records[k];
+    });
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA)); }catch(e){}
+    updateSyncStatus('synced');
+  } else {
+    if(Object.keys(DATA.records || {}).length > 0){
+      await fbSave(DATA);
+    } else {
+      updateSyncStatus('synced');
+    }
+  }
+  const uidEl = document.getElementById('device-uid');
+  if(uidEl) uidEl.textContent = fbUID ? fbUID.slice(0,8) + '...' : '—';
+  migrateAllRecords();
+  render();
+  checkBackupReminder();
+})();
+
+// ---- Device linking ----
+function showDeviceCode(){
+  if(!fbUID){
+    alert('Спочатку потрібне підключення до хмари (☁️ збережено).');
+    return;
+  }
+  const code = fbUID + '||' + (localStorage.getItem('fb_refresh') || '');
+  prompt('Скопіюй цей код і встав на новому пристрої через "Ввести код з іншого пристрою":', code);
+}
+
+async function linkDevice(){
+  const code = prompt('Встав код з основного пристрою:');
+  if(!code) return;
+  const parts = code.split('||');
+  if(parts.length < 2 || !parts[0] || !parts[1]){
+    alert('Невірний формат коду.');
+    return;
+  }
+  const uid = parts[0].trim();
+  const refresh = parts[1].trim();
+  updateSyncStatus('auth');
+  // refresh token to get valid idToken
+  const r = await fetch(
+    'https://securetoken.googleapis.com/v1/token?key=' + FB_CONFIG.apiKey,
+    { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body: 'grant_type=refresh_token&refresh_token=' + refresh }
+  );
+  const d = await r.json();
+  if(!d.id_token){ alert('Не вдалось авторизуватись. Перевір код.'); updateSyncStatus('error'); return; }
+  fbUID = uid;
+  fbToken = d.id_token;
+  localStorage.setItem('fb_uid', fbUID);
+  localStorage.setItem('fb_token', fbToken);
+  localStorage.setItem('fb_token_ts', Date.now());
+  if(d.refresh_token) localStorage.setItem('fb_refresh', d.refresh_token);
+  updateSyncStatus('loading');
+  const cloudData = await fbLoad();
+  if(cloudData){
+    DATA = cloudData;
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA)); }catch(e){}
+    updateSyncStatus('synced');
+    render();
+    alert('✅ Пристрій підключено! Дані завантажено.');
+  } else {
+    updateSyncStatus('error');
+    alert('Авторизація пройшла, але дані не знайдено.');
+  }
+}
+
+// ---- Time mask for HH:MM inputs ----
+// Allows free typing, auto-inserts colon, saves only on valid HH:MM
+document.addEventListener('input', function(e){
+  const el = e.target;
+  if(!el.classList.contains('time-mask')) return;
+
+  let v = el.value.replace(/[^0-9]/g, '');
+
+  // auto-insert colon after 2 digits
+  if(v.length >= 3) v = v.slice(0,2) + ':' + v.slice(2,4);
+  else if(v.length === 2 && el._wasMoreThanTwo) v = v + ':';
+
+  el._wasMoreThanTwo = (el.value.replace(/[^0-9]/g,'').length > 2);
+  el.value = v;
+
+  // validate and mark
+  const valid = /^([01]\d|2[0-3]):([0-5]\d)$/.test(v);
+  el.classList.toggle('time-invalid', v.length > 0 && !valid);
+
+  if(valid){
+    setValue(el.dataset.path, v);
+  }
+});
+
+document.addEventListener('blur', function(e){
+  const el = e.target;
+  if(!el.classList.contains('time-mask')) return;
+  const v = el.value;
+  const valid = /^([01]\d|2[0-3]):([0-5]\d)$/.test(v);
+  if(!valid){
+    // clear invalid partial input visually but keep stored value
+    const stored = (function(){
+      const rec = DATA.records[formatDate(viewDate)];
+      if(!rec) return '';
+      const parts = el.dataset.path.split('.');
+      let obj = rec;
+      for(let i=0;i<parts.length;i++) obj = obj && obj[parts[i]];
+      return typeof obj === 'string' ? obj : '';
+    })();
+    el.value = stored;
+    el.classList.remove('time-invalid');
+  }
+}, true);
+
+document.addEventListener('keydown', function(e){
+  const el = e.target;
+  if(!el.classList.contains('time-mask')) return;
+  // allow: backspace, delete, arrows, tab, digits
+  const allowed = ['Backspace','Delete','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Tab'];
+  if(allowed.includes(e.key)) return;
+  if(e.key === ':') return;
+  if(!/^\d$/.test(e.key)){ e.preventDefault(); return; }
+});
+</script>
+
+</body>
+</html>
