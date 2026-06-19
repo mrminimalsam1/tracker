@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>📚 Бібліотека — Бортовий журнал</title>
+<style>
+:root {
+  --bg:      #080C12;
+  --surf:    #0D1117;
+  --card:    #161B22;
+  --card2:   #1C2330;
+  --border:  #21262D;
+  --border2: #30363D;
+  --text:    #E6EDF3;
+  --muted:   #7D8590;
+  --hint:    #3D444D;
+
+  --neg:    #F78166;
+  --lead:   #79C0FF;
+  --mgmt:   #56D364;
+  --strat:  #E3B341;
+  --pub:    #D2A8FF;
+  --eff:    #39D0E6;
+
+  --done:    #56D364;
+  --reading: #E3B341;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  min-height: 100vh;
+  padding-bottom: 40px;
+}
+
+/* ── HEADER ── */
+.hdr {
+  background: var(--surf);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px 12px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.hdr-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.hdr-title {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: var(--text);
+}
+.hdr-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  letter-spacing: 0.3px;
+}
+.hdr-count {
+  text-align: right;
+}
+.hdr-count .num {
+  font-size: 26px;
+  font-weight: 700;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  color: var(--done);
+  line-height: 1;
+}
+.hdr-count .of {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ── PROGRESS BAR ── */
+.pbar-wrap {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  display: flex;
+  margin-bottom: 10px;
+}
+.pbar-done    { background: var(--done);    transition: width .4s; }
+.pbar-reading { background: var(--reading); transition: width .4s; }
+
+.pbar-labels {
+  display: flex;
+  gap: 14px;
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+.pl-item { display: flex; align-items: center; gap: 5px; }
+.pl-dot  { width: 7px; height: 7px; border-radius: 50%; }
+
+/* ── FILTERS ── */
+.filters {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 10px 16px;
+  background: var(--surf);
+  border-bottom: 1px solid var(--border);
+  scrollbar-width: none;
+}
+.filters::-webkit-scrollbar { display: none; }
+
+.f-btn {
+  flex-shrink: 0;
+  padding: 4px 11px;
+  border-radius: 20px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.f-btn:active { transform: scale(.96); }
+.f-btn.on {
+  background: var(--card2);
+  color: var(--text);
+  border-color: var(--border2);
+}
+
+/* ── CONTENT ── */
+.content { padding: 12px 16px 0; }
+
+/* ── SECTION ── */
+.section { margin-bottom: 24px; }
+.sec-hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.sec-bar {
+  width: 3px;
+  height: 16px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.sec-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  flex: 1;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+.sec-count {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+/* ── BOOK CARD ── */
+.book {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 5px;
+  transition: background .1s;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.book:active { background: var(--card2); }
+
+.book.st-reading {
+  border-left: 2px solid var(--reading);
+  border-radius: 0 8px 8px 0;
+}
+.book.st-done {
+  opacity: .55;
+}
+.book.st-done .bt { text-decoration: line-through; color: var(--muted); }
+
+.bst {
+  font-size: 15px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  width: 18px;
+  text-align: center;
+  line-height: 1;
+}
+.bnum {
+  font-size: 11px;
+  color: var(--hint);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  min-width: 22px;
+  text-align: right;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+.binfo { flex: 1; min-width: 0; }
+.bt {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.35;
+}
+.ba {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.bn {
+  font-size: 11px;
+  color: var(--hint);
+  margin-top: 3px;
+  font-style: italic;
+}
+.bright {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.bscore {
+  font-size: 15px;
+  font-weight: 700;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  line-height: 1;
+  letter-spacing: -0.5px;
+}
+.bscore-lbl {
+  font-size: 9px;
+  color: var(--hint);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  text-align: right;
+  margin-top: -2px;
+}
+.bfmt {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: var(--border);
+  color: var(--muted);
+  white-space: nowrap;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  letter-spacing: .3px;
+}
+.bfmt.aud { background: #1C2330; color: var(--lead); }
+.bfmt.txt { background: #1A2010; color: var(--mgmt); }
+
+/* ── HINT ── */
+.bottom-hint {
+  text-align: center;
+  font-size: 11px;
+  color: var(--hint);
+  padding: 16px 0 0;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+/* ── RESET ── */
+.reset-btn {
+  display: block;
+  margin: 12px auto 0;
+  padding: 4px 14px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--muted);
+  font-size: 11px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.reset-btn:active { opacity: .7; }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-top">
+    <div>
+      <div class="hdr-title">📚 Бібліотека</div>
+      <div class="hdr-sub">БОРТОВИЙ ЖУРНАЛ · ТОП-40</div>
+    </div>
+    <div class="hdr-count">
+      <div class="num" id="cnt-done">0</div>
+      <div class="of">з 40 прочитано</div>
+    </div>
+  </div>
+  <div class="pbar-wrap">
+    <div class="pbar-done"    id="pb-done"    style="width:0%"></div>
+    <div class="pbar-reading" id="pb-reading" style="width:0%"></div>
+  </div>
+  <div class="pbar-labels">
+    <div class="pl-item"><div class="pl-dot" style="background:var(--done)"></div><span id="lbl-done">✓ 0</span></div>
+    <div class="pl-item"><div class="pl-dot" style="background:var(--reading)"></div><span id="lbl-read">◐ 0</span></div>
+    <div class="pl-item"><div class="pl-dot" style="background:var(--border2)"></div><span id="lbl-none">○ 40</span></div>
+  </div>
+</div>
+
+<div class="filters" id="filters"></div>
+<div class="content" id="content"></div>
+<div class="bottom-hint">
+  натисни на книгу → читаю → прочитав → скинути
+  <button class="reset-btn" onclick="confirmReset()">↺ скинути прогрес</button>
+</div>
+
+<script>
+const CATS = {
+  neg:   { label: 'Переговори та вплив',       color: 'var(--neg)'  },
+  lead:  { label: 'Лідерство та командування',  color: 'var(--lead)' },
+  mgmt:  { label: 'Управління та команда',      color: 'var(--mgmt)' },
+  strat: { label: 'Стратегічне мислення',       color: 'var(--strat)'},
+  pub:   { label: 'Публічна роль та влада',     color: 'var(--pub)'  },
+  eff:   { label: 'Особиста ефективність',      color: 'var(--eff)'  },
+};
+
+// fmt: 'a'=аудіо, 't'=текст  |  score: суб'єктивна оцінка для твоєї ситуації /100
+const BOOKS = [
+  {id:1,  cat:'neg',   fmt:'a', score:95, title:'Never Split the Difference',    author:'Кріс Восс',              note:'Найпрактичніша. Читати першою'},
+  {id:2,  cat:'neg',   fmt:'t', score:82, title:'Переговори без поразки',        author:'Фішер, Юрі',             note:'Фундамент принципових переговорів'},
+  {id:3,  cat:'neg',   fmt:'a', score:80, title:'Подолавши Ні',                  author:'Вільям Юрі',             note:'Коли опонент тисне і маніпулює'},
+  {id:4,  cat:'neg',   fmt:'t', score:83, title:'Важкі розмови',                 author:'Стоун, Паттон, Хін',     note:'Розбори з офіцерами без руйнування'},
+  {id:5,  cat:'neg',   fmt:'a', score:88, title:'Вплив',                         author:'Роберт Чалдіні',         note:'6 принципів переконання'},
+  {id:6,  cat:'neg',   fmt:'t', score:78, title:'Pre-Suasion',                   author:'Роберт Чалдіні',         note:'Підготовка до переконання'},
+  {id:7,  cat:'neg',   fmt:'t', score:76, title:'Crucial Conversations',         author:'Паттерсон та ін.',       note:'Розмови з високими ставками'},
+  {id:8,  cat:'neg',   fmt:'a', score:72, title:'Анатомія миру',                 author:'Інститут Арбінгера',     note:'Психомеханіка конфлікту'},
+  {id:9,  cat:'lead',  fmt:'a', score:95, title:'Turn the Ship Around',          author:'Девід Марке',            note:'Передача ЗРБ слабкому командиру'},
+  {id:10, cat:'lead',  fmt:'a', score:92, title:'Extreme Ownership',             author:'Вілінк, Бабін',          note:'Відповідальність командира. Військова'},
+  {id:11, cat:'lead',  fmt:'a', score:80, title:'The Dichotomy of Leadership',   author:'Вілінк, Бабін',          note:"Баланс між жорстким і м'яким"},
+  {id:12, cat:'lead',  fmt:'a', score:82, title:'Leaders Eat Last',              author:'Саймон Сінек',           note:'Культура і довіра в підрозділі'},
+  {id:13, cat:'lead',  fmt:'a', score:79, title:"It's Your Ship",                author:'Майкл Абрашофф',         note:'Найгірший корабель → найкращий'},
+  {id:14, cat:'lead',  fmt:'a', score:77, title:'Start With Why',                author:'Саймон Сінек',           note:'Навіщо — важливіше ніж що'},
+  {id:15, cat:'lead',  fmt:'t', score:75, title:'21 закон лідерства',            author:'Джон Максвелл',          note:'Практичний підручник лідера'},
+  {id:16, cat:'mgmt',  fmt:'a', score:90, title:"П'ять дисфункцій команди",      author:'Патрік Ленсіоні',        note:'Чому команди не працюють як система'},
+  {id:17, cat:'mgmt',  fmt:'t', score:85, title:'Thinking in Systems',           author:'Донелла Медоуз',         note:'Схеми зворотних зв\'язків — потрібні картинки'},
+  {id:18, cat:'mgmt',  fmt:'a', score:82, title:'The Goal',                      author:'Елі Голдратт',           note:'Теорія обмежень. Роман-підручник'},
+  {id:19, cat:'mgmt',  fmt:'t', score:78, title:'Good to Great',                 author:'Джим Коллінз',           note:'Дані і фреймворки — потрібна анотація'},
+  {id:20, cat:'mgmt',  fmt:'a', score:80, title:'Drive',                         author:'Деніел Пінк',            note:'Що насправді мотивує людей'},
+  {id:21, cat:'mgmt',  fmt:'t', score:74, title:'Work Rules!',                   author:'Ласло Бок',              note:'Управління персоналом нового рівня'},
+  {id:22, cat:'strat', fmt:'t', score:91, title:'Good Strategy Bad Strategy',    author:'Річард Руметт',          note:'Відрізнити стратегію від гасел'},
+  {id:23, cat:'strat', fmt:'t', score:88, title:'Thinking, Fast and Slow',       author:'Деніел Канеман',         note:'Як ухвалюються рішення'},
+  {id:24, cat:'strat', fmt:'t', score:85, title:'Мистецтво війни',               author:'Сунь-Цзи',               note:'2500 років — і досі актуально'},
+  {id:25, cat:'strat', fmt:'t', score:82, title:'Antifragile',                   author:'Насім Талеб',            note:'Система що міцніє від ударів'},
+  {id:26, cat:'strat', fmt:'a', score:80, title:'33 стратегії війни',            author:'Роберт Грін',            note:'Практичний Клаузевіц з прикладами'},
+  {id:27, cat:'strat', fmt:'a', score:77, title:'The Black Swan',                author:'Насім Талеб',            note:'Як готуватись до непередбачуваного'},
+  {id:28, cat:'pub',   fmt:'a', score:85, title:"The Dictator's Handbook",       author:'Буено де Мескіта',       note:'Як реально працює влада на будь-якому рівні'},
+  {id:29, cat:'pub',   fmt:'t', score:80, title:'48 законів влади',              author:'Роберт Грін',            note:'48 законів — анотація до кожного'},
+  {id:30, cat:'pub',   fmt:'a', score:82, title:'Sapiens',                       author:'Юваль Харарі',           note:'Широкий контекст для публічного лідера'},
+  {id:31, cat:'pub',   fmt:'a', score:88, title:"Man's Search for Meaning",      author:'Віктор Франкл',          note:'Сенс і стійкість — основа лідерства'},
+  {id:32, cat:'pub',   fmt:'t', score:74, title:'How Democracies Die',           author:'Левіцький, Зіблатт',     note:'Розуміти процеси в країні'},
+  {id:33, cat:'pub',   fmt:'t', score:78, title:'Государ',                       author:'Ніколо Макіавеллі',      note:'Класика публічної влади'},
+  {id:34, cat:'eff',   fmt:'t', score:90, title:'Atomic Habits',                 author:'Джеймс Клір',            note:'Архітектура твоїх звичок'},
+  {id:35, cat:'eff',   fmt:'a', score:92, title:'Why We Sleep',                  author:'Меттью Волкер',          note:'Для трекінгу сну і відновлення'},
+  {id:36, cat:'eff',   fmt:'t', score:85, title:'Deep Work',                     author:'Кал Ньюпорт',            note:'Фокус в умовах постійних відволікань'},
+  {id:37, cat:'eff',   fmt:'a', score:80, title:"Can't Hurt Me",                 author:'Девід Гоггінс',          note:'Переосмислення лімітів'},
+  {id:38, cat:'eff',   fmt:'t', score:79, title:'Flow',                          author:'Міхай Чіксентміхайї',   note:'Стан максимальної продуктивності'},
+  {id:39, cat:'eff',   fmt:'t', score:88, title:'Meditations',                   author:'Марк Аврелій',           note:'Стоїцизм для командира'},
+  {id:40, cat:'eff',   fmt:'t', score:76, title:'The Body Keeps the Score',      author:'Бессел ван дер Колк',    note:'Стрес, тіло і стійкість'},
+];
+
+const KEY = 'bj-biblioteka-v1';
+let statuses = {};
+let activeFilter = 'all';
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) statuses = JSON.parse(raw);
+  } catch(e) { statuses = {}; }
+}
+
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(statuses)); } catch(e) {}
+}
+
+function toggle(id) {
+  statuses[id] = ((statuses[id] || 0) + 1) % 3;
+  save();
+  render();
+}
+
+function setFilter(f) {
+  activeFilter = f;
+  renderFilters();
+  renderContent();
+}
+
+function confirmReset() {
+  if (confirm('Скинути весь прогрес читання?')) {
+    statuses = {};
+    save();
+    render();
+  }
+}
+
+function getStats() {
+  const done    = BOOKS.filter(b => (statuses[b.id] || 0) === 2).length;
+  const reading = BOOKS.filter(b => (statuses[b.id] || 0) === 1).length;
+  return { done, reading, total: BOOKS.length };
+}
+
+function renderHeader() {
+  const s = getStats();
+  const dp = (s.done / s.total * 100).toFixed(1);
+  const rp = (s.reading / s.total * 100).toFixed(1);
+
+  document.getElementById('cnt-done').textContent = s.done;
+  document.getElementById('pb-done').style.width    = dp + '%';
+  document.getElementById('pb-reading').style.width = rp + '%';
+  document.getElementById('lbl-done').textContent = '✓ ' + s.done;
+  document.getElementById('lbl-read').textContent = '◐ ' + s.reading;
+  document.getElementById('lbl-none').textContent = '○ ' + (s.total - s.done - s.reading);
+
+  // color done count
+  const cntEl = document.getElementById('cnt-done');
+  cntEl.style.color = s.done >= s.total ? 'var(--done)' : s.done > 0 ? 'var(--reading)' : 'var(--text)';
+}
+
+function renderFilters() {
+  const cats = Object.entries(CATS);
+  document.getElementById('filters').innerHTML =
+    `<button class="f-btn ${activeFilter==='all'?'on':''}" onclick="setFilter('all')">Всі</button>` +
+    cats.map(([k,c]) =>
+      `<button class="f-btn ${activeFilter===k?'on':''}"
+        onclick="setFilter('${k}')"
+        style="${activeFilter===k?`color:${c.color};border-color:${c.color}`:''}"
+      >${c.label.split(' ')[0]}</button>`
+    ).join('');
+}
+
+function scoreColor(s) {
+  if (s >= 90) return 'var(--done)';
+  if (s >= 80) return 'var(--reading)';
+  return 'var(--muted)';
+}
+
+function renderContent() {
+  const cats = Object.entries(CATS);
+  const toRender = activeFilter === 'all' ? cats : cats.filter(([k]) => k === activeFilter);
+  const ST_ICONS = ['○', '◐', '●'];
+  const ST_COLORS = ['var(--hint)', 'var(--reading)', 'var(--done)'];
+  const ST_CLS    = ['', 'st-reading', 'st-done'];
+
+  document.getElementById('content').innerHTML = toRender.map(([key, cat]) => {
+    const books = BOOKS.filter(b => b.cat === key);
+    const done  = books.filter(b => (statuses[b.id]||0) === 2).length;
+
+    return `
+      <div class="section">
+        <div class="sec-hdr">
+          <div class="sec-bar" style="background:${cat.color}"></div>
+          <div class="sec-label" style="color:${cat.color}">${cat.label}</div>
+          <div class="sec-count">${done}/${books.length}</div>
+        </div>
+        ${books.map(b => {
+          const st = statuses[b.id] || 0;
+          return `
+            <div class="book ${ST_CLS[st]}" onclick="toggle(${b.id})">
+              <div class="bnum">#${b.id}</div>
+              <div class="bst" style="color:${ST_COLORS[st]}">${ST_ICONS[st]}</div>
+              <div class="binfo">
+                <div class="bt">${b.title}</div>
+                <div class="ba">${b.author}</div>
+                <div class="bn">${b.note}</div>
+              </div>
+              <div class="bright">
+                <div class="bscore" style="color:${scoreColor(b.score)}">${b.score}</div>
+                <div class="bscore-lbl">/100</div>
+                <div class="bfmt ${b.fmt==='a'?'aud':'txt'}">${b.fmt==='a'?'АУДІО':'ТЕКСТ'}</div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }).join('');
+}
+
+function render() {
+  renderHeader();
+  renderFilters();
+  renderContent();
+}
+
+// ── INIT ──
+load();
+render();
+</script>
+</body>
+</html>
